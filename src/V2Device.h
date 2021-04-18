@@ -41,10 +41,10 @@ public:
 
     // Number of MIDI ports / virtual cables to access children devices.
     struct Ports {
-      uint8_t configured = 1;
-      uint8_t announce   = 1;
-      uint8_t current    = 1;
-      uint8_t reboot     = 0;
+      uint8_t configured{1};
+      uint8_t announce{1};
+      uint8_t current{1};
+      uint8_t reboot{};
     } ports;
 
     // Link to firmware the image updates, including the protocol prefix. It expects an
@@ -54,8 +54,8 @@ public:
 
   // Custom USB IDs, initialized with the board specified values.
   struct {
-    uint16_t vid = USB_VID;
-    uint16_t pid = USB_PID;
+    uint16_t vid{USB_VID};
+    uint16_t pid{USB_PID};
     V2MIDI::USBDevice midi{};
   } usb;
 
@@ -104,21 +104,21 @@ protected:
 private:
   struct Configuration {
     struct Header {
-      uint32_t magic = 0x7ed63a89;
-      uint32_t size  = sizeof(_configuration);
+      uint32_t magic{0x7ed63a89};
+      uint32_t size{sizeof(_configuration)};
     } header;
 
     // The custom name of the USB device.
-    char name[32];
+    char name[32]{};
 
     // The number of MIDI ports to create.
-    uint8_t ports = 1;
+    uint8_t ports{1};
 
     // The device-specific part.
     struct {
-      uint32_t magic = 0;
-      uint32_t size  = 0;
-    } local;
+      uint32_t magic;
+      uint32_t size;
+    } local{};
   } _configuration;
 
   struct {

@@ -407,29 +407,33 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     }
 
     {
-      JsonObject json_midi_in           = json_system.createNestedObject("input");
-      json_midi_in["note"]              = _statistics.input.note;
-      json_midi_in["aftertouch"]        = _statistics.input.aftertouch;
-      json_midi_in["control"]           = _statistics.input.control;
-      json_midi_in["program"]           = _statistics.input.program;
-      json_midi_in["aftertouchChannel"] = _statistics.input.aftertouch_channel;
-      json_midi_in["pitchbend"]         = _statistics.input.pitchbend;
-      JsonObject json_midi_in_system    = json_midi_in.createNestedObject("system");
-      json_midi_in_system["exclusive"]  = _statistics.input.system.exclusive;
-      json_midi_in_system["reset"]      = _statistics.input.system.reset;
+      JsonObject in              = json_system.createNestedObject("input");
+      in["note"]                 = _statistics.input.note;
+      in["aftertouch"]           = _statistics.input.aftertouch;
+      in["control"]              = _statistics.input.control;
+      in["program"]              = _statistics.input.program;
+      in["aftertouchChannel"]    = _statistics.input.aftertouch_channel;
+      in["pitchbend"]            = _statistics.input.pitchbend;
+      JsonObject in_system       = in.createNestedObject("system");
+      in_system["exclusive"]     = _statistics.input.system.exclusive;
+      in_system["reset"]         = _statistics.input.system.reset;
+      JsonObject in_system_clock = in_system.createNestedObject("clock");
+      in_system_clock["tick"]    = _statistics.input.system.clock.tick;
     }
 
     {
-      JsonObject json_midi_out           = json_system.createNestedObject("output");
-      json_midi_out["note"]              = _statistics.output.note;
-      json_midi_out["aftertouch"]        = _statistics.output.aftertouch;
-      json_midi_out["control"]           = _statistics.output.control;
-      json_midi_out["program"]           = _statistics.output.program;
-      json_midi_out["aftertouchChannel"] = _statistics.output.aftertouch_channel;
-      json_midi_out["pitchbend"]         = _statistics.output.pitchbend;
-      JsonObject json_midi_out_system    = json_midi_out.createNestedObject("system");
-      json_midi_out_system["exclusive"]  = _statistics.output.system.exclusive;
-      json_midi_out_system["reset"]      = _statistics.output.system.reset;
+      JsonObject out              = json_system.createNestedObject("output");
+      out["note"]                 = _statistics.output.note;
+      out["aftertouch"]           = _statistics.output.aftertouch;
+      out["control"]              = _statistics.output.control;
+      out["program"]              = _statistics.output.program;
+      out["aftertouchChannel"]    = _statistics.output.aftertouch_channel;
+      out["pitchbend"]            = _statistics.output.pitchbend;
+      JsonObject out_system       = out.createNestedObject("system");
+      out_system["exclusive"]     = _statistics.output.system.exclusive;
+      out_system["reset"]         = _statistics.output.system.reset;
+      JsonObject out_system_clock = out_system.createNestedObject("clock");
+      out_system_clock["tick"]    = _statistics.output.system.clock.tick;
     }
 
     exportSystem(json_system);
