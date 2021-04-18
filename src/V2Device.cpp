@@ -29,58 +29,6 @@ private:
   uint32_t _magic;
 } bootData __attribute__((section(".noinit")));
 
-// Set the device fuses at the first bootup with a new set of configuration
-// values. V2Device requires EEPROM emulation storage for its configuration.
-static void updateUserPage() {
-  // A magic number in the unused area of the user page indicates that
-  // the device is already updated with the current configuration.
-  static const uint32_t magic = 0xa5f12945;
-  const uint32_t *page        = (uint32_t *)V2Memory::Flash::UserPage::getStart();
-  if (page[8] == magic)
-    return;
-
-  union {
-    uint32_t data[128];
-    uint8_t bytes[512];
-  };
-
-  V2Memory::Flash::UserPage::read(data);
-
-  // Ignore all current values; fix the fallout caused by the broken uf2
-  // bootloader, which has erased the devices's factory calibration. Try to
-  // restore it with known values
-  //
-  // User Page Dump (Intel Hex) of pristine SAMD51G19A:
-  // :0200000400807A
-  // :1040000039929AFE80FFECAEFFFFFFFFFFFFFFFF3C
-  // :1040100010408000FFFFFFFFFFFFFFFFFFFFFFFFDC
-  if (data[4] == 0xffffffff) {
-    memset(bytes, 0xff, 512);
-    data[0] = 0xfe9a9239;
-    data[1] = 0xaeecff80;
-    data[4] = 0x00804010;
-  }
-
-  // Protect the bootloader area.
-  data[0] = (data[0] & ~NVMCTRL_FUSES_BOOTPROT_Msk) | NVMCTRL_FUSES_BOOTPROT(13);
-
-  // Enable the Brown-Out Detector
-  data[0] &= ~FUSES_BOD33_DIS_Msk;
-
-  // Set EEPROM size (4 Kb)
-  data[1] = (data[1] & ~NVMCTRL_FUSES_SEESBLK_Msk) | NVMCTRL_FUSES_SEESBLK(1);
-  data[1] = (data[1] & ~NVMCTRL_FUSES_SEEPSZ_Msk) | NVMCTRL_FUSES_SEEPSZ(3);
-
-  // Add our magic, it will skip this configuration at startup.
-  data[8] = magic;
-
-  V2Memory::Flash::UserPage::write(data);
-
-  // Reboot to enable the new settings.
-  delay(100);
-  NVIC_SystemReset();
-}
-
 void V2Device::readEEPROM() {
   struct Configuration *eeprom = (struct Configuration *)V2Memory::EEPROM::getStart();
 
@@ -119,7 +67,11 @@ void V2Device::readEEPROM() {
 }
 
 void V2Device::begin() {
-  updateUserPage();
+  if (V2Memory::Flash::UserPage::update()) {
+    // Reboot to enable the new settings.
+    delay(100);
+    V2Memory::Firmware::reboot();
+  }
 
   _boot.id = V2Cryptography::Random::read();
 
@@ -541,7 +493,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
   if (json_device["method"] == "eraseConfiguration") {
     // Wipe the entire EEPROM area.
     V2Memory::EEPROM::erase();
-    NVIC_SystemReset();
+    V2Memory::Firmware::reboot();
     return;
   }
 
@@ -556,7 +508,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
     if (!json_device["reboot"]["ports"].isNull())
       bootData.n_ports = json_device["reboot"]["ports"];
 
-    NVIC_SystemReset();
+    V2Memory::Firmware::reboot();
     return;
   }
 
