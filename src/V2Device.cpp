@@ -139,6 +139,10 @@ void V2Device::begin() {
     ;
 }
 
+void V2Device::loop() {
+  handleLoop();
+}
+
 // Send message with the current metadata, capabilities and configuration
 static void sendSysEx(V2MIDI::Port *port, V2MIDI::Transport *transport, uint8_t *message, uint32_t len) {
   V2MIDI::Packet _midi{};

@@ -73,6 +73,8 @@ public:
   // might be carried over to the next reboot.
   void begin();
 
+  void loop();
+
   // Return if there is pending work, e.g. queued messages.
   bool idle();
 
@@ -88,8 +90,10 @@ public:
   }
 
 protected:
-  // Called after reading of the config from the EEPROM.
+  // Called after reading the configuration from the EEPROM, before USB is initialized.
   virtual void handleInit() {}
+
+  virtual void handleLoop() {}
 
   // Read JSON to update the configuration.
   virtual void importConfiguration(JsonObject json) {}
