@@ -137,9 +137,7 @@ void V2Device::begin() {
   usb.midi.begin();
 
   // Sleep mode IDLE, calling __WFI() stops the CPU, peripherals are still running.
-  PM->SLEEPCFG.bit.SLEEPMODE = 0x02;
-  while (PM->SLEEPCFG.bit.SLEEPMODE != 0x02)
-    ;
+  V2Power::setSleepMode(V2Power::Mode::Idle);
 }
 
 void V2Device::loop() {

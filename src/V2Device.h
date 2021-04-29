@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <V2MIDI.h>
 #include <V2Memory.h>
+#include <V2Power.h>
 
 class V2Device : public V2MIDI::Port {
 public:
@@ -85,7 +86,7 @@ public:
   // Wait for interrupts, goes into sleep mode IDLE. The system tick will wake it
   // up at least once every millisecond.
   void sleep() {
-    __WFI();
+    V2Power::sleep();
   }
 
   // Update the device-specific part of the EEPROM configuration.
