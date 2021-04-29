@@ -75,6 +75,9 @@ void V2Device::begin() {
 
   _boot.id = V2Cryptography::Random::read();
 
+  // Do not block in GetAll(), it takes ~80ms.
+  V2Memory::Firmware::calculateHash(V2Memory::Firmware::getStart(), V2Memory::Firmware::getSize(), _firmware.hash);
+
   // Read a possible config from the previous boot cycle.
   if (bootData.n_ports > 1)
     system.ports.reboot = bootData.n_ports;
@@ -140,29 +143,14 @@ void V2Device::begin() {
 }
 
 void V2Device::loop() {
+  sendSystemExclusive();
   handleLoop();
 }
 
-// Send message with the current metadata, capabilities and configuration
-static void sendSysEx(V2MIDI::Port *port, V2MIDI::Transport *transport, uint8_t *message, uint32_t len) {
-  V2MIDI::Packet _midi{};
-  _midi.setSystemExclusive(port, message, len);
-
-  unsigned long usec = micros();
-  do {
-    while (!port->send(transport, &_midi)) {
-      if ((unsigned long)(micros() - usec) > 1500 * 1000)
-        return;
-
-      yield();
-    }
-  } while (_midi.loadSystemExclusive(port));
-}
-
-// Send message to indicate that we are ready
-static void sendFirmwareStatus(V2MIDI::Port *port, V2MIDI::Transport *transport, const char *status) {
-  uint8_t reply[1024];
-  uint32_t len = 0;
+// Reply with message to indicate that we are ready for the next packet.
+void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *status) {
+  uint8_t *reply = getSystemExclusiveBuffer();
+  uint32_t len   = 0;
 
   // 0x7d == SysEx research/private ID
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusive;
@@ -171,7 +159,7 @@ static void sendFirmwareStatus(V2MIDI::Port *port, V2MIDI::Transport *transport,
   len += sprintf((char *)reply + len, status);
   len += sprintf((char *)reply + len, R"("}}})");
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  sendSysEx(port, transport, reply, len);
+  setSystemExclusive(transport, len);
 }
 
 static int8_t utf8Codepoint(const uint8_t *utf8, uint32_t *codepointp) {
@@ -320,8 +308,8 @@ static void addBootloaderMetadata(JsonObject meta) {
 
 // Send the current data as a SystemExclusive, JSON message.
 void V2Device::sendReply(V2MIDI::Transport *transport) {
-  uint8_t reply[16 * 1024];
-  uint32_t len = 0;
+  uint8_t *reply = getSystemExclusiveBuffer();
+  uint32_t len   = 0;
 
   // 0x7d == SysEx research/private ID
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusive;
@@ -349,7 +337,6 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     json_meta["serial"] = serial;
 
     json_meta["version"] = V2DeviceMetadata.version;
-
     exportMetadata(json_meta);
   }
 
@@ -379,11 +366,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
         json_firmware["download"] = system.download;
       json_firmware["id"]    = V2DeviceMetadata.id;
       json_firmware["board"] = V2DeviceMetadata.board;
-
-      char hash[41];
-      V2Memory::Firmware::calculateHash(V2Memory::Firmware::getStart(), V2Memory::Firmware::getSize(), hash);
-      json_firmware["hash"] = hash;
-
+      json_firmware["hash"]  = _firmware.hash;
       json_firmware["start"] = V2Memory::Firmware::getStart();
       json_firmware["size"]  = V2Memory::Firmware::getSize();
     }
@@ -462,12 +445,14 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     exportConfiguration(config);
   }
 
-  uint8_t json_buffer[16 * 1024];
-  uint32_t json_len = serializeJson(json, (char *)json_buffer, sizeof(json_buffer));
-  len += escapeJSON(json_buffer, json_len, reply + len, sizeof(reply) - len);
+  {
+    uint8_t json_buffer[sysex_max_size];
+    uint32_t json_len = serializeJson(json, (char *)json_buffer, sysex_max_size);
+    len += escapeJSON(json_buffer, json_len, reply + len, sysex_max_size - len);
+  }
 
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  sendSysEx(this, transport, reply, len);
+  setSystemExclusive(transport, len);
 }
 
 // Handle a SystemExclusive, JSON request from the host.
@@ -568,7 +553,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
     if (firmware) {
       uint32_t offset = firmware["offset"];
       if (offset % V2Memory::Flash::getBlockSize() != 0) {
-        sendFirmwareStatus(this, transport, "invalidOffset");
+        sendFirmwareStatus(transport, "invalidOffset");
         return;
       }
 
@@ -588,17 +573,31 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
         V2Memory::Firmware::Secondary::copyBootloader();
 
         if (V2Memory::Firmware::Secondary::verify(offset + block_len, hash)) {
-          sendFirmwareStatus(this, transport, "success");
+          sendFirmwareStatus(transport, "success");
+
+          // Flush system exclusive message, loop() is no longer called.
+          unsigned long usec = micros();
+          for (;;) {
+            if (!sendSystemExclusive())
+              break;
+
+            if ((unsigned long)(micros() - usec) > 100 * 1000)
+              break;
+
+            yield();
+          }
+
+          // Give the host time to process the message before the USB device disconnects.
           delay(100);
 
-          // System reset.
+          // System reset with the new firmware image.
           V2Memory::Firmware::Secondary::activate();
         }
 
-        sendFirmwareStatus(this, transport, "hashMismatch");
+        sendFirmwareStatus(transport, "hashMismatch");
 
       } else
-        sendFirmwareStatus(this, transport, "success");
+        sendFirmwareStatus(transport, "success");
     }
 
     return;

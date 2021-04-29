@@ -66,8 +66,12 @@ public:
     void *data;
   } configuration{};
 
+  // 12k maximum system exclusive message size. The firmware update packet is 8k bytes,
+  // base64 encoded, wrapped in JSON.
+  static constexpr uint32_t sysex_max_size{12 * 1024};
+
   // Default port 0.
-  V2Device() : Port(0, 12 * 1024) {}
+  V2Device() : Port(0, sysex_max_size) {}
 
   // Read the configuration from the EEPROM, initialize the bootup data which
   // might be carried over to the next reboot.
@@ -129,7 +133,12 @@ private:
     uint32_t id;
   } _boot{};
 
+  struct {
+    char hash[41];
+  } _firmware{};
+
   void sendReply(V2MIDI::Transport *transport);
+  void sendFirmwareStatus(V2MIDI::Transport *transport, const char *status);
   void handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t *buffer, uint32_t len) override;
   void readEEPROM();
 };
