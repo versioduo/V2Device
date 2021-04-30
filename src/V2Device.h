@@ -89,10 +89,8 @@ public:
     V2Power::sleep();
   }
 
-  // Update the device-specific part of the EEPROM configuration.
-  void writeConfiguration(void *data, uint32_t size) {
-    V2Memory::EEPROM::write(sizeof(_configuration), (const uint8_t *)data, size);
-  }
+  // Write the configuration to the EEPROM.
+  void writeConfiguration();
 
 protected:
   // Called after reading the configuration from the EEPROM, before USB is initialized.

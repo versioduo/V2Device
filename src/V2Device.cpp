@@ -508,7 +508,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
 
     // Write the configuration the the EEPROM.
     if (config) {
-      // Common section
+      // Common section.
       const char *n = config["name"];
       if (n) {
         if (strlen(n) > 1 && strlen(n) < 32) {
@@ -529,19 +529,14 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
         }
       }
 
-      _configuration.header.size = sizeof(_configuration);
-      _configuration.local.magic = configuration.magic;
-      _configuration.local.size  = configuration.size;
-      V2Memory::EEPROM::write(0, (const uint8_t *)&_configuration, sizeof(_configuration));
-
-      // Device-specific section
-      if (configuration.size > 0) {
+      // Device-specific section.
+      if (configuration.size > 0)
         importConfiguration(config);
-        writeConfiguration(configuration.data, configuration.size);
-      }
+
+      writeConfiguration();
     }
 
-    // Reply with the updated configuration
+    // Reply with the updated configuration.
     sendReply(transport);
     return;
   }
@@ -600,6 +595,18 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
 
     return;
   }
+}
+
+void V2Device::writeConfiguration() {
+  // Common section.
+  _configuration.header.size = sizeof(_configuration);
+  _configuration.local.magic = configuration.magic;
+  _configuration.local.size  = configuration.size;
+  V2Memory::EEPROM::write(0, (const uint8_t *)&_configuration, sizeof(_configuration));
+
+  // Device-specific section.
+  if (configuration.size > 0)
+    V2Memory::EEPROM::write(sizeof(_configuration), (const uint8_t *)configuration.data, configuration.size);
 }
 
 bool V2Device::idle() {
