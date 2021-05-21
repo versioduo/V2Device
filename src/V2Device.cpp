@@ -90,7 +90,7 @@ void V2Device::begin() {
   // The larger descriptor is needed to carry the data for more than 3 MIDI ports.
   {
     static uint8_t descriptor[1024];
-    USBDevice.setDescriptorBuffer(descriptor, sizeof(descriptor));
+    USBDevice.setConfigurationBuffer(descriptor, sizeof(descriptor));
   }
 
   // USB uses two two-digit BCD numbers; version 1 will be shown as 0.01, version 815 as 8.15.
@@ -139,7 +139,7 @@ void V2Device::begin() {
 
   usb.midi.begin();
 
-  // Sleep mode IDLE, calling __WFI() stops the CPU, peripherals are still running.
+  // Sleep mode IDLE, wait for interrupts.
   V2Power::setSleepMode(V2Power::Mode::Idle);
 }
 
