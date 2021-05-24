@@ -561,7 +561,9 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
       uint32_t block_len = V2Cryptography::Base64::decode((const uint8_t *)data, bytes);
 
       memset(bytes + block_len, 0xff, V2Memory::Flash::getBlockSize() - block_len);
+      digitalWrite(LED_BUILTIN, HIGH);
       V2Memory::Firmware::Secondary::writeBlock(offset, block);
+      digitalWrite(LED_BUILTIN, LOW);
 
       // The final message contains our hash over the entire image.
       const char *hash = firmware["hash"];
@@ -584,6 +586,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
           }
 
           // Give the host time to process the message before the USB device disconnects.
+          digitalWrite(LED_BUILTIN, HIGH);
           delay(100);
 
           // System reset with the new firmware image.
