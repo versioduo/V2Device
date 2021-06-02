@@ -397,6 +397,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     {
       JsonObject in              = json_system.createNestedObject("input");
       in["note"]                 = _statistics.input.note;
+      in["noteOff"]              = _statistics.input.note_off;
       in["aftertouch"]           = _statistics.input.aftertouch;
       in["control"]              = _statistics.input.control;
       in["program"]              = _statistics.input.program;
@@ -412,6 +413,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     {
       JsonObject out              = json_system.createNestedObject("output");
       out["note"]                 = _statistics.output.note;
+      out["noteOff"]              = _statistics.output.note_off;
       out["aftertouch"]           = _statistics.output.aftertouch;
       out["control"]              = _statistics.output.control;
       out["program"]              = _statistics.output.program;
