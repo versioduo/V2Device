@@ -70,6 +70,8 @@ void V2Device::readEEPROM() {
 }
 
 void V2Device::begin() {
+  V2MIDI::Port::begin();
+
   if (V2Memory::Flash::UserPage::update()) {
     // Reboot to enable the new settings.
     delay(100);
