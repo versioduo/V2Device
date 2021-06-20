@@ -158,7 +158,9 @@ void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *stat
   // 0x7d == SysEx research/private ID
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusive;
   reply[len++] = 0x7d;
-  len += sprintf((char *)reply + len, R"({"com.versioduo.device":{"firmware":{"status":")");
+  len += sprintf((char *)reply + len, R"({"com.versioduo.device":{"token":)");
+  len += sprintf((char *)reply + len, "%d", _boot.id);
+  len += sprintf((char *)reply + len, R"(,"firmware":{"status":")");
   len += sprintf((char *)reply + len, status);
   len += sprintf((char *)reply + len, R"("}}})");
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
@@ -321,6 +323,9 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   StaticJsonDocument<24 * 1024> json;
   JsonObject json_device = json.createNestedObject("com.versioduo.device");
 
+  // Requests and replies contain the device's current bootID.
+  json_device["token"] = _boot.id;
+
   {
     JsonObject json_meta = json_device.createNestedObject("metadata");
     if (metadata.vendor)
@@ -481,6 +486,10 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
   // Only handle requests for our interface.
   JsonObject json_device = json["com.versioduo.device"];
   if (!json_device)
+    return;
+
+  // Requests and replies contain the device's current bootID.
+  if (!json_device["token"].isNull() && json_device["token"] != _boot.id)
     return;
 
   if (json_device["method"] == "getAll") {
