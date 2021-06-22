@@ -146,7 +146,7 @@ void V2Device::begin() {
 }
 
 void V2Device::loop() {
-  sendSystemExclusive();
+  loopSystemExclusive();
   handleLoop();
 }
 
@@ -159,12 +159,12 @@ void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *stat
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusive;
   reply[len++] = 0x7d;
   len += sprintf((char *)reply + len, R"({"com.versioduo.device":{"token":)");
-  len += sprintf((char *)reply + len, "%d", _boot.id);
+  len += sprintf((char *)reply + len, "%u", _boot.id);
   len += sprintf((char *)reply + len, R"(,"firmware":{"status":")");
   len += sprintf((char *)reply + len, status);
   len += sprintf((char *)reply + len, R"("}}})");
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  setSystemExclusive(transport, len);
+  sendSystemExclusive(transport, len);
 }
 
 static int8_t utf8Codepoint(const uint8_t *utf8, uint32_t *codepointp) {
@@ -462,7 +462,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   }
 
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  setSystemExclusive(transport, len);
+  sendSystemExclusive(transport, len);
 }
 
 // Handle a SystemExclusive, JSON request from the host.
@@ -589,7 +589,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
           // Flush system exclusive message, loop() is no longer called.
           unsigned long usec = micros();
           for (;;) {
-            if (!sendSystemExclusive())
+            if (!loopSystemExclusive())
               break;
 
             if ((unsigned long)(micros() - usec) > 100 * 1000)
