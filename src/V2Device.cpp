@@ -158,11 +158,14 @@ void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *stat
   // 0x7d == SysEx research/private ID
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusive;
   reply[len++] = 0x7d;
-  len += sprintf((char *)reply + len, R"({"com.versioduo.device":{"token":)");
-  len += sprintf((char *)reply + len, "%u", _boot.id);
-  len += sprintf((char *)reply + len, R"(,"firmware":{"status":")");
-  len += sprintf((char *)reply + len, status);
-  len += sprintf((char *)reply + len, R"("}}})");
+
+  StaticJsonDocument<1024> json;
+  JsonObject json_device   = json.createNestedObject("com.versioduo.device");
+  json_device["token"]     = _boot.id;
+  JsonObject json_firmware = json_device.createNestedObject("firmware");
+  json_firmware["status"]  = status;
+  len += serializeJson(json, (char *)reply + len, 1024);
+
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
   sendSystemExclusive(transport, len);
 }
