@@ -167,7 +167,7 @@ void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *stat
   len += serializeJson(json, (char *)reply + len, 1024);
 
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  sendSystemExclusive(transport, len);
+  sendSystemExclusive(len, transport);
 }
 
 static int8_t utf8Codepoint(const uint8_t *utf8, uint32_t *codepointp) {
@@ -465,7 +465,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   }
 
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  sendSystemExclusive(transport, len);
+  sendSystemExclusive(len, transport);
 }
 
 // Handle a SystemExclusive, JSON request from the host.
