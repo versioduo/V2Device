@@ -167,7 +167,7 @@ void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *stat
   len += serializeJson(json, (char *)reply + len, 1024);
 
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  sendSystemExclusive(len, transport);
+  sendSystemExclusive(transport, len);
 }
 
 static int8_t utf8Codepoint(const uint8_t *utf8, uint32_t *codepointp) {
@@ -465,7 +465,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   }
 
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
-  sendSystemExclusive(len, transport);
+  sendSystemExclusive(transport, len);
 }
 
 // Handle a SystemExclusive, JSON request from the host.
@@ -592,7 +592,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
           // Flush system exclusive message, loop() is no longer called.
           unsigned long usec = micros();
           for (;;) {
-            if (!loopSystemExclusive())
+            if (loopSystemExclusive() == 0)
               break;
 
             if ((unsigned long)(micros() - usec) > 100 * 1000)
