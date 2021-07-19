@@ -439,11 +439,8 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     exportSystem(json_system);
   }
 
-  JsonObject input = json_device.createNestedObject("input");
-  exportInput(input);
-
-  JsonObject output = json_device.createNestedObject("output");
-  exportOutput(output);
+  JsonObject settings = json_device.createNestedObject("settings");
+  exportSettings(settings);
 
   {
     JsonObject config = json_device.createNestedObject("configuration");
@@ -457,6 +454,12 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
 
     exportConfiguration(config);
   }
+
+  JsonObject input = json_device.createNestedObject("input");
+  exportInput(input);
+
+  JsonObject output = json_device.createNestedObject("output");
+  exportOutput(output);
 
   {
     uint8_t json_buffer[sysex_max_size];
@@ -523,6 +526,8 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
   }
 
   if (json_device["method"] == "writeConfiguration") {
+    // The data in enclosed in an object to prevent name clashes with the
+    // calling convention.
     JsonObject config = json_device["configuration"];
 
     // Write the configuration the the EEPROM.
@@ -561,6 +566,8 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
   }
 
   if (json_device["method"] == "writeFirmware") {
+    // The data in enclosed in an object to prevent name clashes with the
+    // calling convention.
     JsonObject firmware = json_device["firmware"];
     if (firmware) {
       uint32_t offset = firmware["offset"];

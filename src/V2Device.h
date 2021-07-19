@@ -101,15 +101,28 @@ protected:
 
   virtual void handleLoop() {}
 
-  // Read JSON to update the configuration.
+  // Called when updateConfiguration() is called. Parses the config and writes it to
+  // the EEPROM.
   virtual void importConfiguration(JsonObject json) {}
 
-  // Export configuration as JSON.
+  // The human readable device properties, e.g. name, vendor, product, description.
   virtual void exportMetadata(JsonObject json) {}
+
+  // The machine-readable device properties, e.g. state, statistics, firmware update URL.
   virtual void exportSystem(JsonObject json) {}
-  virtual void exportInput(JsonObject json) {}
-  virtual void exportOutput(JsonObject json) {}
+
+  // Groups of configuration sections pointing to data in the configuration, provides
+  // metadata to interpret or build editors for configuration data.
+  virtual void exportSettings(JsonObject json) {}
+
+  // The device configuration. A single JSON record to edit/backup/restore.
   virtual void exportConfiguration(JsonObject json) {}
+
+  // The Notes and controllers the device listens to.
+  virtual void exportInput(JsonObject json) {}
+
+  // The notes and controllers the device sends out.
+  virtual void exportOutput(JsonObject json) {}
 
 private:
   struct Configuration {
