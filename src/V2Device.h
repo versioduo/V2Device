@@ -111,9 +111,9 @@ protected:
   // The machine-readable device properties, e.g. state, statistics, firmware update URL.
   virtual void exportSystem(JsonObject json) {}
 
-  // Groups of configuration sections pointing to data in the configuration, provides
-  // metadata to interpret or build editors for configuration data.
-  virtual void exportSettings(JsonObject json) {}
+  // List of configuration objects pointing to data in the configuration and providing
+  // metadata to create sections in the configuration editor.
+  virtual void exportSettings(JsonArray json) {}
 
   // The device configuration. A single JSON record to edit/backup/restore.
   virtual void exportConfiguration(JsonObject json) {}

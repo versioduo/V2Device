@@ -439,17 +439,19 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     exportSystem(json_system);
   }
 
-  JsonObject settings = json_device.createNestedObject("settings");
+  JsonArray settings = json_device.createNestedArray("settings");
   exportSettings(settings);
 
   {
-    JsonObject config = json_device.createNestedObject("configuration");
-    config["#name"]   = "The device name (USB product string)";
-    config["name"]    = _configuration.name;
+    JsonObject config   = json_device.createNestedObject("configuration");
+    config["#usb"]      = "The USB Settings";
+    JsonObject json_usb = config.createNestedObject("usb");
+    json_usb["#name"]   = "The device name";
+    json_usb["name"]    = _configuration.name;
 
     if (system.ports.announce > 0) {
-      config["#ports"] = "The number of MIDI ports to create";
-      config["ports"]  = _configuration.ports;
+      json_usb["#ports"] = "The number of MIDI ports";
+      json_usb["ports"]  = _configuration.ports;
     }
 
     exportConfiguration(config);
@@ -525,31 +527,32 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
     return;
   }
 
+  // Write the configuration the the EEPROM.
   if (json_device["method"] == "writeConfiguration") {
     // The data in enclosed in an object to prevent name clashes with the
     // calling convention.
     JsonObject config = json_device["configuration"];
-
-    // Write the configuration the the EEPROM.
     if (config) {
-      // Common section.
-      const char *n = config["name"];
-      if (n) {
-        if (strlen(n) > 1 && strlen(n) < 32) {
-          system.name = n;
-          strcpy(_configuration.name, n);
+      JsonObject json_usb = config["usb"];
+      if (json_usb) {
+        const char *n = json_usb["name"];
+        if (n) {
+          if (strlen(n) > 1 && strlen(n) < 32) {
+            system.name = n;
+            strcpy(_configuration.name, n);
 
-        } else {
-          system.name = NULL;
-          memset(_configuration.name, 0, sizeof(_configuration.name));
+          } else {
+            system.name = NULL;
+            memset(_configuration.name, 0, sizeof(_configuration.name));
+          }
         }
-      }
 
-      if (!config["ports"].isNull()) {
-        uint8_t p = config["ports"];
-        if (p >= 1 && p <= 16) {
-          system.ports.configured = p;
-          _configuration.ports    = p;
+        if (!json_usb["ports"].isNull()) {
+          uint8_t p = json_usb["ports"];
+          if (p >= 1 && p <= 16) {
+            system.ports.configured = p;
+            _configuration.ports    = p;
+          }
         }
       }
 
