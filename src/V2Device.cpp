@@ -369,6 +369,11 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   }
 
   {
+    JsonArray jsonLinks = jsonDevice.createNestedArray("links");
+    exportLinks(jsonLinks);
+  }
+
+  {
     JsonObject jsonHelp = jsonDevice.createNestedObject("help");
     if (help.device)
       jsonHelp["device"] = help.device;

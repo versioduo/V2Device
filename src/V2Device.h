@@ -140,6 +140,9 @@ protected:
   // The human readable device properties, e.g. name, vendor, product, description.
   virtual void exportMetadata(JsonObject json) {}
 
+  // A list of external links to web applications using the device.
+  virtual void exportLinks(JsonArray json) {}
+
   // The machine-readable device properties, e.g. state, statistics, firmware update URL.
   virtual void exportSystem(JsonObject json) {}
 
