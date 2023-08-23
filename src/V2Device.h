@@ -3,6 +3,7 @@
 
 #pragma once
 
+#define ARDUINOJSON_USE_DOUBLE 0
 #include <ArduinoJson.h>
 #include <V2Base.h>
 #include <V2LED.h>
