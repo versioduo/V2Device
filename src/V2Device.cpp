@@ -175,10 +175,10 @@ void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *stat
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusive;
   reply[len++] = 0x7d;
 
-  StaticJsonDocument<1024> json;
-  JsonObject jsonDevice   = json.createNestedObject("com.versioduo.device");
+  JsonDocument json;
+  JsonObject jsonDevice   = json["com.versioduo.device"].to<JsonObject>();
   jsonDevice["token"]     = _boot.id;
-  JsonObject jsonFirmware = jsonDevice.createNestedObject("firmware");
+  JsonObject jsonFirmware = jsonDevice["firmware"].to<JsonObject>();
   jsonFirmware["status"]  = status;
   len += serializeJson(json, (char *)reply + len, 1024);
 
@@ -315,7 +315,7 @@ void addStatistics(JsonObject json, V2MIDI::Port::Counter *counter) {
     json["pitchbend"] = counter->pitchbend;
 
   if (counter->system.exclusive > 0 || counter->system.reset > 0 || counter->system.clock.tick > 0) {
-    JsonObject system = json.createNestedObject("system");
+    JsonObject system = json["system"].to<JsonObject>();
     if (counter->system.exclusive > 0)
       system["exclusive"] = counter->system.exclusive;
 
@@ -323,7 +323,7 @@ void addStatistics(JsonObject json, V2MIDI::Port::Counter *counter) {
       system["reset"] = counter->system.reset;
 
     if (counter->system.clock.tick > 0) {
-      JsonObject clock = system.createNestedObject("clock");
+      JsonObject clock = system["clock"].to<JsonObject>();
       clock["tick"]    = counter->system.clock.tick;
     }
   }
@@ -338,14 +338,14 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusive;
   reply[len++] = 0x7d;
 
-  DynamicJsonDocument json(_sysexSize + 4096);
-  JsonObject jsonDevice = json.createNestedObject("com.versioduo.device");
+  JsonDocument json;
+  JsonObject jsonDevice = json["com.versioduo.device"].to<JsonObject>();
 
   // Requests and replies contain the device's current bootID.
   jsonDevice["token"] = _boot.id;
 
   {
-    JsonObject jsonMeta = jsonDevice.createNestedObject("metadata");
+    JsonObject jsonMeta = jsonDevice["metadata"].to<JsonObject>();
     if (metadata.product)
       jsonMeta["product"] = metadata.product;
 
@@ -369,12 +369,12 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   }
 
   {
-    JsonArray jsonLinks = jsonDevice.createNestedArray("links");
+    JsonArray jsonLinks = jsonDevice["links"].to<JsonArray>();
     exportLinks(jsonLinks);
   }
 
   {
-    JsonObject jsonHelp = jsonDevice.createNestedObject("help");
+    JsonObject jsonHelp = jsonDevice["help"].to<JsonObject>();
     if (help.device)
       jsonHelp["device"] = help.device;
 
@@ -383,18 +383,18 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   }
 
   {
-    JsonObject jsonSystem = jsonDevice.createNestedObject("system");
+    JsonObject jsonSystem = jsonDevice["system"].to<JsonObject>();
     if (usb.name)
       jsonSystem["name"] = usb.name;
 
     {
-      JsonObject jsonBoot = jsonSystem.createNestedObject("boot");
+      JsonObject jsonBoot = jsonSystem["boot"].to<JsonObject>();
       jsonBoot["uptime"]  = (uint32_t)(millis() / 1000);
       jsonBoot["id"]      = _boot.id;
     }
 
     {
-      JsonObject jsonFirmware = jsonSystem.createNestedObject("firmware");
+      JsonObject jsonFirmware = jsonSystem["firmware"].to<JsonObject>();
       if (system.download)
         jsonFirmware["download"] = system.download;
 
@@ -409,7 +409,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     }
 
     {
-      JsonObject jsonHardware = jsonSystem.createNestedObject("hardware");
+      JsonObject jsonHardware = jsonSystem["hardware"].to<JsonObject>();
 
       {
         // The end of the bootloader contains an array of four offsets/pointers.
@@ -417,7 +417,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
 
         // The first entry is the location of our metadata.
         const char *metadata = (const char *)info[0];
-        StaticJsonDocument<2 * 1024> jsonMetadata;
+        JsonDocument jsonMetadata;
         if (deserializeJson(jsonMetadata, metadata))
           return;
 
@@ -435,26 +435,26 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
         jsonHardware["revision"] = system.revision;
 
       {
-        JsonObject jsonRam = jsonHardware.createNestedObject("ram");
+        JsonObject jsonRam = jsonHardware["ram"].to<JsonObject>();
         jsonRam["size"]    = V2Base::Memory::RAM::getSize();
         jsonRam["free"]    = V2Base::Memory::RAM::getFree();
       }
 
       {
-        JsonObject jsonFlash = jsonHardware.createNestedObject("flash");
+        JsonObject jsonFlash = jsonHardware["flash"].to<JsonObject>();
         jsonFlash["size"]    = V2Base::Memory::Flash::getSize();
       }
 
       {
-        JsonObject jsonEeprom = jsonHardware.createNestedObject("eeprom");
+        JsonObject jsonEeprom = jsonHardware["eeprom"].to<JsonObject>();
         jsonEeprom["size"]    = V2Base::Memory::EEPROM::getSize();
         jsonEeprom["used"]    = readEEPROM(true);
       }
 
       {
-        JsonObject jsonUsb = jsonHardware.createNestedObject("usb");
+        JsonObject jsonUsb = jsonHardware["usb"].to<JsonObject>();
         {
-          JsonObject jsonHost  = jsonUsb.createNestedObject("connection");
+          JsonObject jsonHost  = jsonUsb["connection"].to<JsonObject>();
           jsonHost["active"]   = usb.midi.connected();
           jsonHost["sequence"] = usb.midi.getConnectionSequence();
         }
@@ -463,7 +463,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
         jsonUsb["pid"] = _eeprom.usb.pid > 0 ? _eeprom.usb.pid : usb.pid;
 
         if (usb.ports.standard > 0) {
-          JsonObject jsonPorts  = jsonUsb.createNestedObject("ports");
+          JsonObject jsonPorts  = jsonUsb["ports"].to<JsonObject>();
           jsonPorts["standard"] = usb.ports.standard;
           if (usb.ports.access > 0)
             jsonPorts["access"] = usb.ports.access;
@@ -472,32 +472,32 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
       }
     }
 
-    JsonObject jsonMidi = jsonSystem.createNestedObject("midi");
+    JsonObject jsonMidi = jsonSystem["midi"].to<JsonObject>();
     {
-      JsonObject jsonIn = jsonMidi.createNestedObject("input");
+      JsonObject jsonIn = jsonMidi["input"].to<JsonObject>();
       addStatistics(jsonIn, &_statistics.input);
 
-      JsonObject jsonOut = jsonMidi.createNestedObject("output");
+      JsonObject jsonOut = jsonMidi["output"].to<JsonObject>();
       addStatistics(jsonOut, &_statistics.output);
     }
 
     if (link) {
-      JsonObject jsonLink = jsonSystem.createNestedObject("link");
+      JsonObject jsonLink = jsonSystem["link"].to<JsonObject>();
       if (link->plug) {
-        JsonObject jsonPlug = jsonLink.createNestedObject("plug");
+        JsonObject jsonPlug = jsonLink["plug"].to<JsonObject>();
         jsonPlug["input"]   = link->plug->statistics.input;
         jsonPlug["output"]  = link->plug->statistics.output;
       }
 
       if (link->socket) {
-        JsonObject jsonSocket = jsonLink.createNestedObject("socket");
+        JsonObject jsonSocket = jsonLink["socket"].to<JsonObject>();
         jsonSocket["input"]   = link->socket->statistics.input;
         jsonSocket["output"]  = link->socket->statistics.output;
       }
     }
 
     if (serial) {
-      JsonObject jsonSerial = jsonSystem.createNestedObject("serial");
+      JsonObject jsonSerial = jsonSystem["serial"].to<JsonObject>();
       jsonSerial["input"]   = serial->statistics.input;
       jsonSerial["output"]  = serial->statistics.output;
     }
@@ -505,13 +505,13 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     exportSystem(jsonSystem);
   }
 
-  JsonArray settings = jsonDevice.createNestedArray("settings");
+  JsonArray settings = jsonDevice["settings"].to<JsonArray>();
   exportSettings(settings);
 
   {
-    JsonObject config  = jsonDevice.createNestedObject("configuration");
+    JsonObject config  = jsonDevice["configuration"].to<JsonObject>();
     config["#usb"]     = "USB Settings";
-    JsonObject jsonUsb = config.createNestedObject("usb");
+    JsonObject jsonUsb = config["usb"].to<JsonObject>();
     jsonUsb["#name"]   = "Device Name";
     jsonUsb["name"]    = _eeprom.usb.name;
 
@@ -529,12 +529,12 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     exportConfiguration(config);
   }
 
-  JsonObject input = jsonDevice.createNestedObject("input");
+  JsonObject input = jsonDevice["input"].to<JsonObject>();
   exportInput(input);
   if (input.begin() == input.end())
     jsonDevice.remove("input");
 
-  JsonObject output = jsonDevice.createNestedObject("output");
+  JsonObject output = jsonDevice["output"].to<JsonObject>();
   exportOutput(output);
   if (output.begin() == output.end())
     jsonDevice.remove("output");
@@ -563,7 +563,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
     return;
 
   // Read incoming message.
-  DynamicJsonDocument json(_sysexSize + 4096);
+  JsonDocument json;
   if (deserializeJson(json, buffer + 2, len - 1))
     return;
 
