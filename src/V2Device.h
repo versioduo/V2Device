@@ -15,13 +15,13 @@ public:
   // Device metadata stored in a global variable.
   struct Metadata {
     // Reverse-domain, unique device identifier (e.g. com.example.frobnicator).
-    const char *id;
+    const char* id;
 
     // The version will always be presented to the user as a simple decimal number.
     const uint32_t version;
 
     // The fully-qualified board name.
-    const char *board;
+    const char* board;
 
     // JSON object, it can be read from the offline firmware image. It needs to
     // be an embedded array not a pointer, to be able to retrieve its location
@@ -31,29 +31,29 @@ public:
 
   struct {
     // Few words, title line describing the function.
-    const char *description{};
+    const char* description{};
 
     // Human readable text, also used as USB strings.
-    const char *vendor{};
-    const char *product{};
+    const char* vendor{};
+    const char* product{};
 
     // Link to a website, including protocol prefix.
-    const char *home{};
+    const char* home{};
   } metadata;
 
   // Help texts, paragraphs are separated by newline.
   struct {
-    const char *device{};
-    const char *configuration{};
+    const char* device{};
+    const char* configuration{};
   } help;
 
   struct {
     // Link to firmware the image updates, including the protocol prefix. It expects an
     // 'index.json' file at the location.
-    const char *download{};
+    const char* download{};
 
     // Link to the WebMIDI configuration site. The link is advertized over WebUSB.
-    const char *configure{};
+    const char* configure{};
 
     // A specific hardware revision number encoded with GPIO pins connected to ground.
     uint8_t revision{};
@@ -62,7 +62,7 @@ public:
   // Custom USB IDs, initialized with the board specified values.
   struct {
     // Custom USB device name.
-    const char *name{};
+    const char* name{};
 
     uint16_t vid{USB_VID};
     uint16_t pid{USB_PID};
@@ -75,7 +75,7 @@ public:
       // The number of ports to enable when 'rebootWithPorts' is called
       // to gain access to the children devices.
       uint8_t access{};
-      bool enableAccess{};
+      bool    enableAccess{};
 
       // The currently active number of ports.
       uint8_t current{1};
@@ -84,9 +84,9 @@ public:
     V2MIDI::USBDevice midi{};
   } usb;
 
-  V2Link *link{};
+  V2Link* link{};
 
-  V2MIDI::SerialDevice *serial{};
+  V2MIDI::SerialDevice* serial{};
 
   // Built-in LED.
   V2LED::Basic led;
@@ -95,7 +95,7 @@ public:
   struct {
     uint16_t version; // A different version calls handleEEPROM() to possibly convert from.
     uint16_t size;
-    void *data;
+    void*    data;
   } configuration{};
 
   // The maximum system exclusive message size. It needs to carry at least the firmware
@@ -161,7 +161,7 @@ protected:
   virtual void exportOutput(JsonObject json) {}
 
   // Read the binary configuration from an different/older version.
-  virtual void handleEEPROM(uint16_t version, const void *data, uint32_t size) {}
+  virtual void handleEEPROM(uint16_t version, const void* data, uint32_t size) {}
 
 private:
   struct EEPROM {
@@ -201,9 +201,9 @@ private:
 
   V2Base::Timer::Periodic _ledTimer;
 
-  void sendReply(V2MIDI::Transport *transport);
-  void sendFirmwareStatus(V2MIDI::Transport *transport, const char *status);
-  void handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t *buffer, uint32_t len) override;
+  void sendReply(V2MIDI::Transport* transport);
+  void sendFirmwareStatus(V2MIDI::Transport* transport, const char* status);
+  void handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t* buffer, uint32_t len) override;
   bool readEEPROM(bool dryrun = false);
 };
 

@@ -35,7 +35,7 @@ private:
 } bootData __attribute__((section(".noinit")));
 
 bool V2Device::readEEPROM(bool dryrun) {
-  struct EEPROM *eeprom = (struct EEPROM *)V2Base::Memory::EEPROM::getStart();
+  struct EEPROM* eeprom = (struct EEPROM*)V2Base::Memory::EEPROM::getStart();
   // Check our magic, all bytes are 0xff after chip erase.
   if (eeprom->header.magic != _eeprom.header.magic)
     return false;
@@ -53,7 +53,7 @@ bool V2Device::readEEPROM(bool dryrun) {
   if (eeprom->local.magic != usb.pid || !configuration.data || eeprom->local.size == 0)
     return true;
 
-  const void *data = (const uint8_t *)V2Base::Memory::EEPROM::getStart() + eeprom->header.size;
+  const void* data = (const uint8_t*)V2Base::Memory::EEPROM::getStart() + eeprom->header.size;
 
   // Try to import an older version of the configuration.
   if (eeprom->local.version != configuration.version) {
@@ -120,7 +120,7 @@ void V2Device::begin() {
 
   // Set USB device name, the default is provided by the board package, the metadata
   // provides a product name, a custom name might be stored in the EEPROM.
-  const char *name = usb.name ? usb.name : metadata.product;
+  const char* name = usb.name ? usb.name : metadata.product;
   usb.midi.setName(name);
   if (system.configure && memcmp(system.configure, "https://", 8) == 0)
     usb.midi.setConfigureURL(system.configure, name);
@@ -128,10 +128,8 @@ void V2Device::begin() {
   // Set USB MIDI ports.
   if (usb.ports.enableAccess)
     usb.ports.current = (usb.ports.access > 0) ? usb.ports.access : 16;
-
   else if (_eeprom.usb.ports > 0)
     usb.ports.current = _eeprom.usb.ports;
-
   else if (usb.ports.standard > 0)
     usb.ports.current = usb.ports.standard;
 
@@ -167,8 +165,8 @@ void V2Device::loop() {
 }
 
 // Reply with message to indicate that we are ready for the next packet.
-void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *status) {
-  uint8_t *reply = getSystemExclusiveBuffer();
+void V2Device::sendFirmwareStatus(V2MIDI::Transport* transport, const char* status) {
+  uint8_t* reply = getSystemExclusiveBuffer();
   uint32_t len   = 0;
 
   // 0x7d == SysEx research/private ID
@@ -176,38 +174,32 @@ void V2Device::sendFirmwareStatus(V2MIDI::Transport *transport, const char *stat
   reply[len++] = 0x7d;
 
   JsonDocument json;
-  JsonObject jsonDevice   = json["com.versioduo.device"].to<JsonObject>();
+  JsonObject   jsonDevice = json["com.versioduo.device"].to<JsonObject>();
   jsonDevice["token"]     = _boot.id;
   JsonObject jsonFirmware = jsonDevice["firmware"].to<JsonObject>();
   jsonFirmware["status"]  = status;
-  len += serializeJson(json, (char *)reply + len, 1024);
+  len += serializeJson(json, (char*)reply + len, 1024);
 
   reply[len++] = (uint8_t)V2MIDI::Packet::Status::SystemExclusiveEnd;
   sendSystemExclusive(transport, len);
 }
 
-static int8_t utf8Codepoint(const uint8_t *utf8, uint32_t *codepointp) {
+static int8_t utf8Codepoint(const uint8_t* utf8, uint32_t* codepointp) {
   uint32_t codepoint;
-  int8_t len;
+  int8_t   len;
 
   if (utf8[0] < 0x80)
     len = 1;
-
   else if ((utf8[0] & 0xe0) == 0xc0)
     len = 2;
-
   else if ((utf8[0] & 0xf0) == 0xe0)
     len = 3;
-
   else if ((utf8[0] & 0xf8) == 0xf0)
     len = 4;
-
   else if ((utf8[0] & 0xfc) == 0xf8)
     len = 5;
-
   else if ((utf8[0] & 0xfe) == 0xfc)
     len = 6;
-
   else
     return -1;
 
@@ -250,13 +242,13 @@ static int8_t utf8Codepoint(const uint8_t *utf8, uint32_t *codepointp) {
 }
 
 // Escape unicode to fit into a 7 bit byte stream.
-static uint32_t escapeJSON(const uint8_t *jsonBuffer, uint32_t jsonLen, uint8_t *buffer, uint32_t size) {
+static uint32_t escapeJSON(const uint8_t* jsonBuffer, uint32_t jsonLen, uint8_t* buffer, uint32_t size) {
   uint32_t bufferLen = 0;
 
   for (uint32_t i = 0; i < jsonLen; i++) {
     if (jsonBuffer[i] > 0x7f) {
       uint32_t codepoint;
-      uint8_t len = utf8Codepoint(jsonBuffer + i, &codepoint);
+      uint8_t  len = utf8Codepoint(jsonBuffer + i, &codepoint);
       if (len < 0)
         continue;
 
@@ -267,7 +259,7 @@ static uint32_t escapeJSON(const uint8_t *jsonBuffer, uint32_t jsonLen, uint8_t 
         if (bufferLen + 7 > size)
           return 0;
 
-        bufferLen += sprintf((char *)buffer + bufferLen, "\\u%04x", codepoint);
+        bufferLen += sprintf((char*)buffer + bufferLen, "\\u%04x", codepoint);
 
       } else {
         if (bufferLen + 13 > size)
@@ -276,7 +268,7 @@ static uint32_t escapeJSON(const uint8_t *jsonBuffer, uint32_t jsonLen, uint8_t 
         codepoint -= 0x10000;
         uint16_t surrogate1 = (codepoint >> 10) + 0xd800;
         uint16_t surrogate2 = (codepoint & 0x3ff) + 0xdc00;
-        bufferLen += sprintf((char *)buffer + bufferLen, "\\u%04x\\u%04x", surrogate1, surrogate2);
+        bufferLen += sprintf((char*)buffer + bufferLen, "\\u%04x\\u%04x", surrogate1, surrogate2);
       }
 
     } else {
@@ -290,7 +282,7 @@ static uint32_t escapeJSON(const uint8_t *jsonBuffer, uint32_t jsonLen, uint8_t 
   return bufferLen;
 }
 
-void addStatistics(JsonObject json, V2MIDI::Port::Counter *counter) {
+void addStatistics(JsonObject json, V2MIDI::Port::Counter* counter) {
   json["packet"] = counter->packet;
 
   if (counter->note > 0)
@@ -330,8 +322,8 @@ void addStatistics(JsonObject json, V2MIDI::Port::Counter *counter) {
 }
 
 // Send the current data as a SystemExclusive, JSON message.
-void V2Device::sendReply(V2MIDI::Transport *transport) {
-  uint8_t *reply = getSystemExclusiveBuffer();
+void V2Device::sendReply(V2MIDI::Transport* transport) {
+  uint8_t* reply = getSystemExclusiveBuffer();
   uint32_t len   = 0;
 
   // 0x7d == SysEx research/private ID
@@ -339,7 +331,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
   reply[len++] = 0x7d;
 
   JsonDocument json;
-  JsonObject jsonDevice = json["com.versioduo.device"].to<JsonObject>();
+  JsonObject   jsonDevice = json["com.versioduo.device"].to<JsonObject>();
 
   // Requests and replies contain the device's current bootID.
   jsonDevice["token"] = _boot.id;
@@ -413,10 +405,10 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
 
       {
         // The end of the bootloader contains an array of four offsets/pointers.
-        const uint32_t *info = (uint32_t *)V2Base::Memory::Firmware::getStart() - 4;
+        const uint32_t* info = (uint32_t*)V2Base::Memory::Firmware::getStart() - 4;
 
         // The first entry is the location of our metadata.
-        const char *metadata = (const char *)info[0];
+        const char*  metadata = (const char*)info[0];
         JsonDocument jsonMetadata;
         if (deserializeJson(jsonMetadata, metadata))
           return;
@@ -540,8 +532,8 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
     jsonDevice.remove("output");
 
   {
-    uint8_t jsonBuffer[_sysexSize];
-    uint32_t jsonLen = serializeJson(json, (char *)jsonBuffer, _sysexSize);
+    uint8_t  jsonBuffer[_sysexSize];
+    uint32_t jsonLen = serializeJson(json, (char*)jsonBuffer, _sysexSize);
     len += escapeJSON(jsonBuffer, jsonLen, reply + len, _sysexSize - len);
   }
 
@@ -550,7 +542,7 @@ void V2Device::sendReply(V2MIDI::Transport *transport) {
 }
 
 // Handle a SystemExclusive, JSON request from the host.
-void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t *buffer, uint32_t len) {
+void V2Device::handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t* buffer, uint32_t len) {
   if (len < 24)
     return;
 
@@ -616,7 +608,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
     if (config) {
       JsonObject jsonUsb = config["usb"];
       if (jsonUsb) {
-        const char *n = jsonUsb["name"];
+        const char* n = jsonUsb["name"];
         if (n) {
           if (strlen(n) > 1 && strlen(n) < 32) {
             usb.name = n;
@@ -652,6 +644,9 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
       writeConfiguration();
     }
 
+    // We might need the memory for the reply of large configuration records.
+    jsonDevice.clear();
+
     // Reply with the updated configuration.
     sendReply(transport);
     return;
@@ -668,12 +663,12 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
         return;
       }
 
-      const char *data = firmware["data"];
+      const char* data = firmware["data"];
       union {
         uint32_t block[V2Base::Memory::Flash::getBlockSize() / sizeof(uint32_t)];
-        uint8_t bytes[V2Base::Memory::Flash::getBlockSize()];
+        uint8_t  bytes[V2Base::Memory::Flash::getBlockSize()];
       };
-      uint32_t blockLen = V2Base::Text::Base64::decode((const uint8_t *)data, bytes);
+      uint32_t blockLen = V2Base::Text::Base64::decode((const uint8_t*)data, bytes);
 
       memset(bytes + blockLen, 0xff, V2Base::Memory::Flash::getBlockSize() - blockLen);
       led.setBrightness(0.3);
@@ -681,7 +676,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
       led.setBrightness(0.1);
 
       // The final message contains our hash over the entire image.
-      const char *hash = firmware["hash"];
+      const char* hash = firmware["hash"];
       if (hash) {
         V2Base::Memory::Firmware::Secondary::copyBootloader();
 
@@ -710,8 +705,9 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport *transport, const uint8_t
 
         sendFirmwareStatus(transport, "hashMismatch");
 
-      } else
+      } else {
         sendFirmwareStatus(transport, "success");
+      }
     }
 
     return;
@@ -723,11 +719,11 @@ void V2Device::writeConfiguration() {
   _eeprom.local.magic   = usb.pid;
   _eeprom.local.version = configuration.version;
   _eeprom.local.size    = configuration.size;
-  V2Base::Memory::EEPROM::write(0, (const uint8_t *)&_eeprom, sizeof(_eeprom));
+  V2Base::Memory::EEPROM::write(0, (const uint8_t*)&_eeprom, sizeof(_eeprom));
 
   // Device-specific section.
   if (configuration.size > 0)
-    V2Base::Memory::EEPROM::write(sizeof(_eeprom), (const uint8_t *)configuration.data, configuration.size);
+    V2Base::Memory::EEPROM::write(sizeof(_eeprom), (const uint8_t*)configuration.data, configuration.size);
 }
 
 bool V2Device::idle() {
