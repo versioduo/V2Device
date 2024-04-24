@@ -571,6 +571,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t
     return;
 
   if (jsonDevice["method"] == "getAll") {
+    jsonDevice.clear();
     sendReply(transport);
     return;
   }
@@ -585,6 +586,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t
   if (jsonDevice["method"] == "switchChannel") {
     if (!jsonDevice["channel"].isNull())
       handleSwitchChannel(jsonDevice["channel"]);
+    jsonDevice.clear();
     sendReply(transport);
     return;
   }
@@ -644,10 +646,8 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t
       writeConfiguration();
     }
 
-    // We might need the memory for the reply of large configuration records.
-    jsonDevice.clear();
-
     // Reply with the updated configuration.
+    jsonDevice.clear();
     sendReply(transport);
     return;
   }
