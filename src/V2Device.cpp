@@ -571,7 +571,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t
     return;
 
   if (jsonDevice["method"] == "getAll") {
-    jsonDevice.clear();
+    json.clear();
     sendReply(transport);
     return;
   }
@@ -586,7 +586,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t
   if (jsonDevice["method"] == "switchChannel") {
     if (!jsonDevice["channel"].isNull())
       handleSwitchChannel(jsonDevice["channel"]);
-    jsonDevice.clear();
+    json.clear();
     sendReply(transport);
     return;
   }
@@ -647,7 +647,7 @@ void V2Device::handleSystemExclusive(V2MIDI::Transport* transport, const uint8_t
     }
 
     // Reply with the updated configuration.
-    jsonDevice.clear();
+    json.clear();
     sendReply(transport);
     return;
   }
