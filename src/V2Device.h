@@ -102,11 +102,8 @@ public:
   // update packet of 8k bytes -> base64 encoded -> wrapped in a JSON object -> ~12kb.
   //
   // Default USB MIDI port 0.
-  V2Device() = delete;
-  constexpr V2Device(uint32_t sysexSize = 16 * 1024) :
-    Port(0, sysexSize),
-    led(PIN_LED_ONBOARD, &_ledTimer),
-    _ledTimer(3, 1000) {}
+  constexpr V2Device() : V2Device(16 * 1024){};
+  constexpr V2Device(uint32_t sysexSize) : Port(0, sysexSize), led(PIN_LED_ONBOARD, &_ledTimer), _ledTimer(3, 1000) {}
 
   // Read the configuration from the EEPROM, initialize the bootup data which
   // might be carried over to the next reboot.
