@@ -102,6 +102,7 @@ public:
   // update packet of 8k bytes -> base64 encoded -> wrapped in a JSON object -> ~12kb.
   //
   // Default USB MIDI port 0.
+  V2Device() = delete;
   constexpr V2Device(uint32_t sysexSize = 16 * 1024) :
     Port(0, sysexSize),
     led(PIN_LED_ONBOARD, &_ledTimer),
