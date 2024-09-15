@@ -118,10 +118,13 @@ void V2Device::begin() {
   readEEPROM();
   handleInit();
 
+  usb.midi.setVendor(metadata.vendor);
+
   // Set USB device name, the default is provided by the board package, the metadata
   // provides a product name, a custom name might be stored in the EEPROM.
   const char* name = usb.name ? usb.name : metadata.product;
   usb.midi.setName(name);
+
   if (system.configure && memcmp(system.configure, "https://", 8) == 0)
     usb.midi.setConfigureURL(system.configure, name);
 
